@@ -4,13 +4,17 @@ Shai (pronounced "shy") is a sandboxing tool for running CLI-based AI agents ins
 
 ##  Quick Start
 1. Install shai:
+2. 
    ```bash
-   # MacOS
-   brew install --cask colony-2/tap/shai
-   # OR
    npm install -g @colony2/shai
    ```
 
+   or
+
+   ```bash
+   brew install --cask colony-2/tap/shai
+   ```
+ 
 2. Run Shai from your workspace:
    ```bash
    # minimal invocation – read-only workspace sandbox
