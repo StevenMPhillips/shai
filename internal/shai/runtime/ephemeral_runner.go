@@ -274,7 +274,7 @@ func (r *EphemeralRunner) runEphemeralContainer(ctx context.Context, useTTY bool
 func (r *EphemeralRunner) runEphemeralContainerWithID(ctx context.Context, useTTY bool, idCh chan<- string) error {
 	containerName := generateContainerName()
 
-	containerCfg, hostCfg, err := r.buildDockerConfigs(useTTY, containerName)
+	containerCfg, hostCfg, err := r.buildDockerConfigs(ctx, useTTY, containerName)
 	if err != nil {
 		return err
 	}
@@ -439,7 +439,7 @@ func (r *EphemeralRunner) buildStartMarker() string {
 		r.image, targetUser, resourceSummary)
 }
 
-func (r *EphemeralRunner) buildDockerConfigs(useTTY bool, containerName string) (*container.Config, *container.HostConfig, error) {
+func (r *EphemeralRunner) buildDockerConfigs(ctx context.Context, useTTY bool, containerName string) (*container.Config, *container.HostConfig, error) {
 	if err := r.ensureBootstrapScript(); err != nil {
 		return nil, nil, err
 	}
@@ -501,10 +501,18 @@ func (r *EphemeralRunner) buildDockerConfigs(useTTY bool, containerName string) 
 	// Determine if container should run in privileged mode
 	privileged := r.config.Privileged || r.hasPrivilegedResource()
 
+	// Determine the host address for ExtraHosts
+	// host-gateway is only supported by Docker Desktop; Colima/Podman need actual IP
+	hostAddr := "host-gateway"
+	if gatewayIP, err := getDockerBridgeGatewayIP(ctx, r.docker); err == nil && gatewayIP != "" {
+		// Use resolved IP which works with Colima/Podman/Docker Desktop
+		hostAddr = gatewayIP
+	}
+
 	hostCfg := &container.HostConfig{
 		AutoRemove: true,
 		Mounts:     mounts,
-		ExtraHosts: []string{fmt.Sprintf("%s:host-gateway", r.dockerHostAddr)},
+		ExtraHosts: []string{fmt.Sprintf("%s:%s", r.dockerHostAddr, hostAddr)},
 		CapAdd:     []string{"NET_ADMIN"},
 		Privileged: privileged,
 	}
